@@ -1,47 +1,75 @@
 const express = require("express");
-const mysql = require("mysql");
+const { Sequelize } = require("sequelize");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const con = mysql.createConnection({
+const sequelize = new Sequelize("createclass", "root", "", {
   host: "localhost",
-  user: "root",
-  password: "",
-  database: "createclass",
+  dialect: "mysql",
+});
+
+// Define the User model
+const User = sequelize.define("User", {
+  name: {
+    type: Sequelize.STRING,
+  },
+  email: {
+    type: Sequelize.STRING,
+    unique: true,
+  },
+  password: {
+    type: Sequelize.STRING,
+  },
+});
+
+// Create the table if it doesn't exist
+sequelize.sync().then(() => {
+  console.log("Tables created");
 });
 
 app.post("/login", (req, res) => {
-  const sql = "SELECT * FROM user WHERE `email`=? AND `password`=?";
-  con.query(sql, [req.body.email, req.body.password], (err, data) => {
-    if (err) {
-      return res.json("error");
-    }
-    if (data.length > 0) {
-      const userData = data[0];
+  // Use Sequelize to query the database
+  User.findOne({
+    where: {
+      email: req.body.email,
+      password: req.body.password,
+    },
+  })
+    .then((user) => {
+      if (!user) {
+        return res.json("fail");
+      }
       return res.json({
         success: true,
         data: {
-          token: "some-token", // generate a token here
-          name: userData.name,
+          token: "some-token",
+          name: user.name,
         },
       });
-    } else {
-      return res.json("fail");
-    }
-  });
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.json("error");
+    });
 });
 
 app.post("/register", (req, res) => {
-  const sql = "INSERT INTO user (`name`, `email`, `password`) VALUES (?)";
-  const values = [req.body.name, req.body.email, req.body.password];
-
-  con.query(sql, [values], (err, data) => {
-    if (err) return res.json(err);
-    return res.json(data);
-  });
+  // Use Sequelize to create a new user
+  User.create({
+    name: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+  })
+    .then((user) => {
+      return res.json(user);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.json(err);
+    });
 });
 
 const PORT = process.env.PORT || 8081;

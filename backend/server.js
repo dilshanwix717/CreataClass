@@ -31,7 +31,6 @@ sequelize.sync().then(() => {
 });
 
 app.post("/login", (req, res) => {
-  // Use Sequelize to query the database
   User.findOne({
     where: {
       email: req.body.email,
@@ -57,7 +56,6 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  // Use Sequelize to create a new user
   User.create({
     name: req.body.name,
     email: req.body.email,
